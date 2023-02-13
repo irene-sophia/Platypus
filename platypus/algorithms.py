@@ -16,6 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Platypus.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import absolute_import, division, print_function
 
 import sys
 import copy
@@ -25,17 +26,17 @@ import operator
 import itertools
 import functools
 from abc import ABCMeta, abstractmethod
-from .core import Algorithm, ParetoDominance, AttributeDominance,\
-    AttributeDominance, nondominated_sort, nondominated_prune,\
-    nondominated_truncate, nondominated_split, crowding_distance,\
-    EPSILON, POSITIVE_INFINITY, Archive, EpsilonDominance, FitnessArchive,\
-    Solution, HypervolumeFitnessEvaluator, nondominated_cmp, fitness_key,\
-    crowding_distance_key, AdaptiveGridArchive, Selector, EpsilonBoxArchive,\
+from .core import Algorithm, ParetoDominance, AttributeDominance, \
+    AttributeDominance, nondominated_sort, nondominated_prune, \
+    nondominated_truncate, nondominated_split, crowding_distance, \
+    EPSILON, POSITIVE_INFINITY, Archive, EpsilonDominance, FitnessArchive, \
+    Solution, HypervolumeFitnessEvaluator, nondominated_cmp, fitness_key, \
+    crowding_distance_key, AdaptiveGridArchive, Selector, EpsilonBoxArchive, \
     PlatypusError, Problem
-from .operators import TournamentSelector, RandomGenerator,\
-    DifferentialEvolution, clip, UniformMutation, NonUniformMutation,\
+from .operators import TournamentSelector, RandomGenerator, \
+    DifferentialEvolution, clip, UniformMutation, NonUniformMutation, \
     GAOperator, SBX, PM, UM, PCX, UNDX, SPX, Multimethod
-from .tools import DistanceMatrix, choose, point_line_dist, lsolve,\
+from .tools import DistanceMatrix, choose, point_line_dist, lsolve, \
     tred2, tql2, check_eigensystem, remove_keys, only_keys_for
 from .weights import random_weights, chebyshev, normal_boundary_weights
 from .config import default_variator, default_mutator
@@ -45,15 +46,15 @@ try:
 except NameError:
     from sets import Set as set
 
-class AbstractGeneticAlgorithm(Algorithm):
 
+class AbstractGeneticAlgorithm(Algorithm):
     __metaclass__ = ABCMeta
 
     def __init__(self, problem,
-                 population_size = 100,
-                 generator = RandomGenerator(),
+                 population_size=100,
+                 generator=RandomGenerator(),
                  **kwargs):
-        super().__init__(problem, **kwargs)
+        super(AbstractGeneticAlgorithm, self).__init__(problem, **kwargs)
         self.population_size = population_size
         self.generator = generator
         self.result = []
@@ -74,38 +75,39 @@ class AbstractGeneticAlgorithm(Algorithm):
     def iterate(self):
         raise NotImplementedError("method not implemented")
 
-class SingleObjectiveAlgorithm(AbstractGeneticAlgorithm):
 
+class SingleObjectiveAlgorithm(AbstractGeneticAlgorithm):
     __metaclass__ = ABCMeta
 
     def __init__(self, problem,
-                 population_size = 100,
-                 generator = RandomGenerator(),
+                 population_size=100,
+                 generator=RandomGenerator(),
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(SingleObjectiveAlgorithm, self).__init__(problem, population_size, generator, **kwargs)
 
         if problem.nobjs != 1:
             raise PlatypusError("can not instantiate single objective algorithm "
                                 "on problem with %d objectives" % problem.nobjs)
 
+
 class GeneticAlgorithm(SingleObjectiveAlgorithm):
 
     def __init__(self, problem,
-                 population_size = 100,
-                 offspring_size = 100,
-                 generator = RandomGenerator(),
-                 selector = TournamentSelector(2),
-                 comparator = ParetoDominance(),
-                 variator = None,
+                 population_size=100,
+                 offspring_size=100,
+                 generator=RandomGenerator(),
+                 selector=TournamentSelector(2),
+                 variator=None,
+                 comparator=ParetoDominance(),
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(GeneticAlgorithm, self).__init__(problem, population_size, generator, **kwargs)
         self.offspring_size = offspring_size
         self.selector = selector
         self.comparator = comparator
         self.variator = variator
 
     def initialize(self):
-        super().initialize()
+        super(GeneticAlgorithm, self).initialize()
 
         if self.variator is None:
             self.variator = default_variator(self.problem)
@@ -128,22 +130,23 @@ class GeneticAlgorithm(SingleObjectiveAlgorithm):
         self.population = offspring[:self.population_size]
         self.fittest = self.population[0]
 
+
 class EvolutionaryStrategy(SingleObjectiveAlgorithm):
 
     def __init__(self, problem,
-                 population_size = 100,
-                 offspring_size = 100,
-                 generator = RandomGenerator(),
-                 comparator = ParetoDominance(),
-                 variator = None,
+                 population_size=100,
+                 offspring_size=100,
+                 generator=RandomGenerator(),
+                 comparator=ParetoDominance(),
+                 variator=None,
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(EvolutionaryStrategy, self).__init__(problem, population_size, generator, **kwargs)
         self.offspring_size = offspring_size
         self.comparator = comparator
         self.variator = variator
 
     def initialize(self):
-        super().initialize()
+        super(EvolutionaryStrategy, self).initialize()
 
         if self.variator is None:
             self.variator = default_mutator(self.problem)
@@ -161,16 +164,17 @@ class EvolutionaryStrategy(SingleObjectiveAlgorithm):
         offspring = sorted(offspring, key=functools.cmp_to_key(self.comparator))
         self.population = offspring[:self.population_size]
 
+
 class NSGAII(AbstractGeneticAlgorithm):
 
     def __init__(self, problem,
-                 population_size = 100,
-                 generator = RandomGenerator(),
-                 selector = TournamentSelector(2),
-                 variator = None,
-                 archive = None,
+                 population_size=100,
+                 generator=RandomGenerator(),
+                 selector=TournamentSelector(2),
+                 variator=None,
+                 archive=None,
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(NSGAII, self).__init__(problem, population_size, generator, **kwargs)
         self.selector = selector
         self.variator = variator
         self.archive = archive
@@ -187,7 +191,7 @@ class NSGAII(AbstractGeneticAlgorithm):
             self.result = self.population
 
     def initialize(self):
-        super().initialize()
+        super(NSGAII, self).initialize()
 
         if self.archive is not None:
             self.archive += self.population
@@ -211,16 +215,17 @@ class NSGAII(AbstractGeneticAlgorithm):
         if self.archive is not None:
             self.archive.extend(self.population)
 
+
 class EpsMOEA(AbstractGeneticAlgorithm):
 
     def __init__(self, problem,
                  epsilons,
-                 population_size = 100,
-                 generator = RandomGenerator(),
-                 selector = TournamentSelector(2),
-                 variator = None,
+                 population_size=100,
+                 generator=RandomGenerator(),
+                 selector=TournamentSelector(2),
+                 variator=None,
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(EpsMOEA, self).__init__(problem, population_size, generator, **kwargs)
         self.selector = selector
         self.variator = variator
         self.dominance = ParetoDominance()
@@ -235,7 +240,7 @@ class EpsMOEA(AbstractGeneticAlgorithm):
         self.result = self.archive
 
     def initialize(self):
-        super().initialize()
+        super(EpsMOEA, self).initialize()
         self.archive += self.population
 
         if self.variator is None:
@@ -245,7 +250,7 @@ class EpsMOEA(AbstractGeneticAlgorithm):
         if len(self.archive) <= 1:
             parents = self.selector.select(self.variator.arity, self.population)
         else:
-            parents = self.selector.select(self.variator.arity-1, self.population) + [random.choice(self.archive)]
+            parents = self.selector.select(self.variator.arity - 1, self.population) + [random.choice(self.archive)]
 
         random.shuffle(parents)
 
@@ -275,22 +280,23 @@ class EpsMOEA(AbstractGeneticAlgorithm):
             self.population.remove(random.choice(self.population))
             self.population.append(solution)
 
+
 class GDE3(AbstractGeneticAlgorithm):
 
     def __init__(self, problem,
-                 population_size = 100,
-                 generator = RandomGenerator(),
-                 variator = DifferentialEvolution(),
+                 population_size=100,
+                 generator=RandomGenerator(),
+                 variator=DifferentialEvolution(),
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(GDE3, self).__init__(problem, population_size, generator, **kwargs)
         self.variator = variator
         self.dominance = ParetoDominance()
 
     def select(self, i, arity):
         indices = []
         indices.append(i)
-        indices.extend(random.sample(list(range(0, i)) + list(range(i+1, len(self.population))),
-                                     arity-1))
+        indices.extend(random.sample(list(range(0, i)) + list(range(i + 1, len(self.population))),
+                                     arity - 1))
         return operator.itemgetter(*indices)(self.population)
 
     def survival(self, offspring):
@@ -309,7 +315,7 @@ class GDE3(AbstractGeneticAlgorithm):
         return nondominated_prune(next_population, self.population_size)
 
     def initialize(self):
-        super().initialize()
+        super(GDE3, self).initialize()
 
         if self.variator is None:
             self.variator = default_variator(self.problem)
@@ -324,27 +330,29 @@ class GDE3(AbstractGeneticAlgorithm):
         self.evaluate_all(offspring)
         self.population = self.survival(offspring)
 
+
 class SPEA2(AbstractGeneticAlgorithm):
 
     def __init__(self, problem,
-                 population_size = 100,
-                 generator = RandomGenerator(),
-                 variator = None,
-                 dominance = ParetoDominance(),
-                 k = 1,
+                 population_size=100,
+                 generator=RandomGenerator(),
+                 variator=None,
+                 dominance=ParetoDominance(),
+                 k=1,
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(SPEA2, self).__init__(problem, population_size, generator, **kwargs)
         self.variator = variator
         self.dominance = dominance
         self.k = k
         self.selection = TournamentSelector(2, dominance=AttributeDominance(fitness_key))
 
     def _distance(self, solution1, solution2):
-        return math.sqrt(sum([math.pow(solution2.objectives[i]-solution1.objectives[i], 2.0) for i in range(self.problem.nobjs)]))
+        return math.sqrt(
+            sum([math.pow(solution2.objectives[i] - solution1.objectives[i], 2.0) for i in range(self.problem.nobjs)]))
 
     def _assign_fitness(self, solutions):
-        strength = [0]*len(solutions)
-        fitness = [0.0]*len(solutions)
+        strength = [0] * len(solutions)
+        fitness = [0.0] * len(solutions)
 
         # compute dominance flags
         keys = list(itertools.combinations(range(len(solutions)), 2))
@@ -382,7 +390,7 @@ class SPEA2(AbstractGeneticAlgorithm):
         if len(survivors) < size:
             remaining = [s for s in solutions if s.fitness >= 1.0]
             remaining = sorted(remaining, key=fitness_key)
-            survivors.extend(remaining[:(size-len(survivors))])
+            survivors.extend(remaining[:(size - len(survivors))])
         else:
             distanceMatrix = DistanceMatrix(survivors)
 
@@ -394,7 +402,7 @@ class SPEA2(AbstractGeneticAlgorithm):
         return survivors
 
     def initialize(self):
-        super().initialize()
+        super(SPEA2, self).initialize()
         self._assign_fitness(self.population)
 
         if self.variator is None:
@@ -413,19 +421,21 @@ class SPEA2(AbstractGeneticAlgorithm):
         self._assign_fitness(offspring)
         self.population = self._truncate(offspring, self.population_size)
 
+
 class MOEAD(AbstractGeneticAlgorithm):
 
     def __init__(self, problem,
-                 neighborhood_size = 10,
-                 generator = RandomGenerator(),
-                 variator = None,
-                 delta = 0.8,
-                 eta = 1,
-                 update_utility = None,
-                 weight_generator = random_weights,
-                 scalarizing_function = chebyshev,
+                 neighborhood_size=10,
+                 generator=RandomGenerator(),
+                 variator=None,
+                 delta=0.8,
+                 eta=1,
+                 update_utility=None,
+                 weight_generator=random_weights,
+                 scalarizing_function=chebyshev,
                  **kwargs):
-        super().__init__(problem, 0, generator, **remove_keys(kwargs, "population_size")) # population_size is set after generating weights
+        super(MOEAD, self).__init__(problem, 0, generator, **remove_keys(kwargs,
+                                                                         "population_size"))  # population_size is set after generating weights
         self.neighborhood_size = neighborhood_size
         self.variator = variator
         self.delta = delta
@@ -480,9 +490,10 @@ class MOEAD(AbstractGeneticAlgorithm):
 
     def _sort_weights(self, base, weights):
         """Returns the index of weights nearest to the base weight."""
+
         def compare(weight1, weight2):
-            dist1 = math.sqrt(sum([math.pow(base[i]-weight1[1][i], 2.0) for i in range(len(base))]))
-            dist2 = math.sqrt(sum([math.pow(base[i]-weight2[1][i], 2.0) for i in range(len(base))]))
+            dist1 = math.sqrt(sum([math.pow(base[i] - weight1[1][i], 2.0) for i in range(len(base))]))
+            dist2 = math.sqrt(sum([math.pow(base[i] - weight2[1][i], 2.0) for i in range(len(base))]))
 
             if dist1 < dist2:
                 return -1
@@ -509,11 +520,11 @@ class MOEAD(AbstractGeneticAlgorithm):
             self.neighborhoods.append(sorted_weights[:self.neighborhood_size])
 
         # initialize the ideal point
-        self.ideal_point = [POSITIVE_INFINITY]*self.problem.nobjs
+        self.ideal_point = [POSITIVE_INFINITY] * self.problem.nobjs
 
         # initialize the utilities and fitnesses
-        self.utilities = [1.0]*self.population_size
-        self.fitnesses = [0.0]*self.population_size
+        self.utilities = [1.0] * self.population_size
+        self.fitnesses = [0.0] * self.population_size
 
         # generate and evaluate the initial population
         self.population = [self.generator.generate(self.problem) for _ in range(self.population_size)]
@@ -583,14 +594,15 @@ class MOEAD(AbstractGeneticAlgorithm):
             if old_fitness - new_fitness > 0.001:
                 self.utilities[i] = 1.0
             else:
-                self.utilities[i] = min(1.0, 0.95 * (1.0 + 0.05*relative_decrease/0.001) * self.utilities[i])
+                self.utilities[i] = min(1.0, 0.95 * (1.0 + 0.05 * relative_decrease / 0.001) * self.utilities[i])
 
             self.fitnesses[i] = new_fitness
 
     def iterate(self):
         for index in self._get_subproblems():
             mating_indices = self._get_mating_indices(index)
-            parents = [self.population[index]] + [self.population[i] for i in mating_indices[:(self.variator.arity-1)]]
+            parents = [self.population[index]] + [self.population[i] for i in
+                                                  mating_indices[:(self.variator.arity - 1)]]
             offspring = self.variator.evolve(parents)
 
             self.evaluate_all(offspring)
@@ -604,24 +616,26 @@ class MOEAD(AbstractGeneticAlgorithm):
         if self.update_utility is not None and self.update_utility >= 0 and self.generation % self.update_utility == 0:
             self._update_utility()
 
+
 class NSGAIII(AbstractGeneticAlgorithm):
 
     def __init__(self, problem,
                  divisions_outer,
-                 divisions_inner = 0,
-                 generator = RandomGenerator(),
-                 selector = TournamentSelector(2),
-                 variator = None,
+                 divisions_inner=0,
+                 generator=RandomGenerator(),
+                 selector=TournamentSelector(2),
+                 variator=None,
                  **kwargs):
-        super().__init__(problem, generator = generator, **kwargs)
+        super(NSGAIII, self).__init__(problem, generator=generator, **kwargs)
         self.selector = selector
         self.variator = variator
 
         self.population_size = choose(problem.nobjs + divisions_outer - 1, divisions_outer) + \
-                (0 if divisions_inner == 0 else choose(problem.nobjs + divisions_inner - 1, divisions_inner))
+                               (0 if divisions_inner == 0 else choose(problem.nobjs + divisions_inner - 1,
+                                                                      divisions_inner))
         self.population_size = int(math.ceil(self.population_size / 4.0)) * 4
 
-        self.ideal_point = [POSITIVE_INFINITY]*problem.nobjs
+        self.ideal_point = [POSITIVE_INFINITY] * problem.nobjs
         self.reference_points = normal_boundary_weights(problem.nobjs, divisions_outer, divisions_inner)
 
         # NSGAIII currently only works on minimization problems
@@ -631,7 +645,7 @@ class NSGAIII(AbstractGeneticAlgorithm):
     def _find_extreme_points(self, solutions, objective):
         nobjs = self.problem.nobjs
 
-        weights = [0.000001]*nobjs
+        weights = [0.000001] * nobjs
         weights[objective] = 1.0
 
         min_index = -1
@@ -639,7 +653,7 @@ class NSGAIII(AbstractGeneticAlgorithm):
 
         for i in range(len(solutions)):
             objectives = solutions[i].normalized_objectives
-            value = max([objectives[j]/weights[j] for j in range(nobjs)])
+            value = max([objectives[j] / weights[j] for j in range(nobjs)])
 
             if value < min_value:
                 min_index = i
@@ -701,7 +715,7 @@ class NSGAIII(AbstractGeneticAlgorithm):
             degenerate = False
 
             try:
-                b = [1.0]*nobjs
+                b = [1.0] * nobjs
                 A = [s.normalized_objectives[:] for s in extreme_points]
                 x = lsolve(A, b)
                 intercepts = [1.0 / i for i in x]
@@ -715,14 +729,15 @@ class NSGAIII(AbstractGeneticAlgorithm):
                         break
 
             if degenerate:
-                intercepts = [-POSITIVE_INFINITY]*nobjs
+                intercepts = [-POSITIVE_INFINITY] * nobjs
 
                 for i in range(nobjs):
                     intercepts[i] = max([s.normalized_objectives[i] for s in solutions] + [EPSILON])
 
             # normalize objectives using intercepts
             for solution in solutions:
-                solution.normalized_objectives = [solution.normalized_objectives[i] / intercepts[i] for i in range(nobjs)]
+                solution.normalized_objectives = [solution.normalized_objectives[i] / intercepts[i] for i in
+                                                  range(nobjs)]
 
             # associate each solution to a reference point
             members = self._associate_to_reference_point(result, self.reference_points)
@@ -749,7 +764,8 @@ class NSGAIII(AbstractGeneticAlgorithm):
                     if len(potential_members[min_index]) == 0:
                         excluded.add(min_index)
                     else:
-                        min_solution = self._find_minimum_distance(potential_members[min_index], self.reference_points[min_index])
+                        min_solution = self._find_minimum_distance(potential_members[min_index],
+                                                                   self.reference_points[min_index])
                         result.append(min_solution)
                         members[min_index].append(min_solution)
                         potential_members[min_index].remove(min_solution)
@@ -767,7 +783,7 @@ class NSGAIII(AbstractGeneticAlgorithm):
             return solutions
 
     def initialize(self):
-        super().initialize()
+        super(NSGAIII, self).initialize()
 
         if self.variator is None:
             self.variator = default_variator(self.problem)
@@ -785,22 +801,22 @@ class NSGAIII(AbstractGeneticAlgorithm):
         nondominated_sort(offspring)
         self.population = self._reference_point_truncate(offspring, self.population_size)
 
-class ParticleSwarm(Algorithm):
 
+class ParticleSwarm(Algorithm):
     __metaclass__ = ABCMeta
 
     def __init__(self, problem,
-                 swarm_size = 100,
-                 leader_size = 100,
-                 generator = RandomGenerator(),
-                 mutate = None,
-                 leader_comparator = AttributeDominance(fitness_key),
-                 dominance = ParetoDominance(),
-                 fitness = None,
-                 larger_preferred = True,
-                 fitness_getter = fitness_key,
+                 swarm_size=100,
+                 leader_size=100,
+                 generator=RandomGenerator(),
+                 mutate=None,
+                 leader_comparator=AttributeDominance(fitness_key),
+                 dominance=ParetoDominance(),
+                 fitness=None,
+                 larger_preferred=True,
+                 fitness_getter=fitness_key,
                  **kwargs):
-        super().__init__(problem, **kwargs)
+        super(ParticleSwarm, self).__init__(problem, **kwargs)
         self.swarm_size = swarm_size
         self.leader_size = leader_size
         self.generator = generator
@@ -826,12 +842,12 @@ class ParticleSwarm(Algorithm):
         self.local_best = self.particles[:]
 
         self.leaders = FitnessArchive(self.fitness,
-                                      larger_preferred = self.larger_preferred,
-                                      getter = self.fitness_getter)
+                                      larger_preferred=self.larger_preferred,
+                                      getter=self.fitness_getter)
         self.leaders += self.particles
         self.leaders.truncate(self.leader_size)
 
-        self.velocities = [[0.0]*self.problem.nvars for _ in range(self.swarm_size)]
+        self.velocities = [[0.0] * self.problem.nvars for _ in range(self.swarm_size)]
 
     def iterate(self):
         self._update_velocities()
@@ -857,8 +873,8 @@ class ParticleSwarm(Algorithm):
 
             for j in range(self.problem.nvars):
                 self.velocities[i][j] = W * self.velocities[i][j] + \
-                        C1*r1*(local_best[j] - particle[j]) + \
-                        C2*r2*(leader[j] - particle[j])
+                                        C1 * r1 * (local_best[j] - particle[j]) + \
+                                        C2 * r2 * (leader[j] - particle[j])
 
     def _select_leader(self):
         leader1 = random.choice(self.leaders)
@@ -906,25 +922,26 @@ class ParticleSwarm(Algorithm):
             for i in range(self.swarm_size):
                 self.particles[i] = self.mutate.mutate([self.particles[i]])[0]
 
+
 class OMOPSO(ParticleSwarm):
 
     def __init__(self, problem,
                  epsilons,
-                 swarm_size = 100,
-                 leader_size = 100,
-                 generator = RandomGenerator(),
-                 mutation_probability = 0.1,
-                 mutation_perturbation = 0.5,
-                 max_iterations = 100,
+                 swarm_size=100,
+                 leader_size=100,
+                 generator=RandomGenerator(),
+                 mutation_probability=0.1,
+                 mutation_perturbation=0.5,
+                 max_iterations=100,
                  **kwargs):
-        super().__init__(problem,
+        super(OMOPSO, self).__init__(problem,
                                      swarm_size=swarm_size,
                                      leader_size=leader_size,
-                                     generator = generator,
-                                     leader_comparator = AttributeDominance(crowding_distance_key),
-                                     dominance = ParetoDominance(),
-                                     fitness = crowding_distance,
-                                     fitness_getter = crowding_distance_key,
+                                     generator=generator,
+                                     leader_comparator=AttributeDominance(crowding_distance_key),
+                                     dominance=ParetoDominance(),
+                                     fitness=crowding_distance,
+                                     fitness_getter=crowding_distance_key,
                                      **kwargs)
         self.max_iterations = max_iterations
         self.archive = Archive(EpsilonDominance(epsilons))
@@ -944,11 +961,11 @@ class OMOPSO(ParticleSwarm):
             self.result = self.archive
 
     def initialize(self):
-        super().initialize()
+        super(OMOPSO, self).initialize()
         self.archive += self.particles
 
     def iterate(self):
-        super().iterate()
+        super(OMOPSO, self).iterate()
         self.archive += self.particles
 
     def _mutate(self):
@@ -958,33 +975,34 @@ class OMOPSO(ParticleSwarm):
             elif i % 3 == 1:
                 self.particles[i] = self.uniform_mutation.mutate(self.particles[i])
 
+
 class SMPSO(ParticleSwarm):
 
     def __init__(self, problem,
-                 swarm_size = 100,
-                 leader_size = 100,
-                 generator = RandomGenerator(),
-                 mutation_probability = 0.1,
-                 mutation_perturbation = 0.5,
-                 max_iterations = 100,
-                 mutate = None,
+                 swarm_size=100,
+                 leader_size=100,
+                 generator=RandomGenerator(),
+                 mutation_probability=0.1,
+                 mutation_perturbation=0.5,
+                 max_iterations=100,
+                 mutate=None,
                  **kwargs):
-        super().__init__(problem,
+        super(SMPSO, self).__init__(problem,
                                     swarm_size=swarm_size,
                                     leader_size=leader_size,
-                                    generator = generator,
-                                    leader_comparator = AttributeDominance(crowding_distance_key),
-                                    dominance = ParetoDominance(),
-                                    fitness = crowding_distance,
-                                    fitness_getter = crowding_distance_key,
-                                    mutate = mutate,
+                                    generator=generator,
+                                    leader_comparator=AttributeDominance(crowding_distance_key),
+                                    dominance=ParetoDominance(),
+                                    fitness=crowding_distance,
+                                    fitness_getter=crowding_distance_key,
+                                    mutate=mutate,
                                     **kwargs)
         self.max_iterations = max_iterations
-        self.maximum_velocity = [(t.max_value - t.min_value)/2.0 for t in problem.types]
-        self.minimum_velocity = [-(t.max_value - t.min_value)/2.0 for t in problem.types]
+        self.maximum_velocity = [(t.max_value - t.min_value) / 2.0 for t in problem.types]
+        self.minimum_velocity = [-(t.max_value - t.min_value) / 2.0 for t in problem.types]
 
     def initialize(self):
-        super().initialize()
+        super(SMPSO, self).initialize()
 
         if self.mutate is None:
             self.mutate = default_mutator(self.problem)
@@ -1003,9 +1021,9 @@ class SMPSO(ParticleSwarm):
 
             for j in range(self.problem.nvars):
                 self.velocities[i][j] = self._constriction(C1, C2) * \
-                        (W * self.velocities[i][j] + \
-                        C1*r1*(local_best[j] - particle[j]) + \
-                        C2*r2*(leader[j] - particle[j]))
+                                        (W * self.velocities[i][j] + \
+                                         C1 * r1 * (local_best[j] - particle[j]) + \
+                                         C2 * r2 * (leader[j] - particle[j]))
 
                 self.velocities[i][j] = clip(self.velocities[i][j],
                                              self.minimum_velocity[j],
@@ -1017,30 +1035,31 @@ class SMPSO(ParticleSwarm):
         if rho <= 4:
             return 1.0
         else:
-            return 2.0 / (2.0 - rho - math.sqrt(math.pow(rho, 2.0) - 4.0*rho))
+            return 2.0 / (2.0 - rho - math.sqrt(math.pow(rho, 2.0) - 4.0 * rho))
 
     def _mutate(self):
         for i in range(self.swarm_size):
             if i % 6 == 0:
                 self.particles[i] = self.mutate.mutate(self.particles[i])
 
+
 class CMAES(Algorithm):
 
     def __init__(self, problem,
-                 offspring_size = 100,
-                 cc = None,
-                 cs = None,
-                 damps = None,
-                 ccov = None,
-                 ccovsep = None,
-                 sigma = None,
-                 diagonal_iterations = 0,
-                 indicator = "crowding",
-                 initial_search_point = None,
-                 check_consistency = False,
-                 epsilons = None,
+                 offspring_size=100,
+                 cc=None,
+                 cs=None,
+                 damps=None,
+                 ccov=None,
+                 ccovsep=None,
+                 sigma=None,
+                 diagonal_iterations=0,
+                 indicator="crowding",
+                 initial_search_point=None,
+                 check_consistency=False,
+                 epsilons=None,
                  **kwargs):
-        super().__init__(problem, **kwargs)
+        super(CMAES, self).__init__(problem, **kwargs)
         self.offspring_size = offspring_size
         self.cc = cc
         self.cs = cs
@@ -1061,7 +1080,7 @@ class CMAES(Algorithm):
         else:
             self.archive = Archive(EpsilonDominance(epsilons))
 
-        if indicator == "hypervolume":
+        if indicator == "hypervolume":  # is
             self.fitness_evaluator = HypervolumeFitnessEvaluator()
             self.fitness_comparator = AttributeDominance(False)
         else:
@@ -1083,18 +1102,18 @@ class CMAES(Algorithm):
         if self.diagonal_iterations is None:
             self.diagonal_iterations = 150 * self.problem.nvars / self.offspring_size
 
-        self.diag_D = [1.0]*self.problem.nvars
-        self.pc = [0.0]*self.problem.nvars
-        self.ps = [0.0]*self.problem.nvars
-        self.B = [[1.0 if i==j else 0.0 for j in range(self.problem.nvars)] for i in range(self.problem.nvars)]
-        self.C = [[1.0 if i==j else 0.0 for j in range(self.problem.nvars)] for i in range(self.problem.nvars)]
-        self.xmean = [0.0]*self.problem.nvars
+        self.diag_D = [1.0] * self.problem.nvars
+        self.pc = [0.0] * self.problem.nvars
+        self.ps = [0.0] * self.problem.nvars
+        self.B = [[1.0 if i == j else 0.0 for j in range(self.problem.nvars)] for i in range(self.problem.nvars)]
+        self.C = [[1.0 if i == j else 0.0 for j in range(self.problem.nvars)] for i in range(self.problem.nvars)]
+        self.xmean = [0.0] * self.problem.nvars
 
         if self.initial_search_point is None:
             for i in range(self.problem.nvars):
                 type = self.problem.types[i]
                 offset = self.sigma * self.diag_D[i]
-                rangev = type.max_value - type.min_value - 2*self.sigma*self.diag_D[i]
+                rangev = type.max_value - type.min_value - 2 * self.sigma * self.diag_D[i]
 
                 if offset > 0.4 * (type.max_value - type.min_value):
                     offset = 0.4 * (type.max_value - type.min_value)
@@ -1103,29 +1122,33 @@ class CMAES(Algorithm):
                 self.xmean[i] = type.min_value + offset + random.uniform(0.0, 1.0) * rangev
         else:
             for i in range(self.problem.nvars):
-                self.xmean[i] = self.initial_search_point[i] + self.sigma*self.diag_D[i]*random.gauss()
+                self.xmean[i] = self.initial_search_point[i] + self.sigma * self.diag_D[i] * random.gauss()
 
-        self.chi_N = math.sqrt(self.problem.nvars) * (1.0 - 1.0/(4.0*self.problem.nvars) + 1.0/(21.0*self.problem.nvars**2))
+        self.chi_N = math.sqrt(self.problem.nvars) * (
+                    1.0 - 1.0 / (4.0 * self.problem.nvars) + 1.0 / (21.0 * self.problem.nvars ** 2))
         self.mu = int(math.floor(self.offspring_size / 2.0))
         self.weights = [math.log(self.mu + 1.0) - math.log(i + 1.0) for i in range(self.mu)]
 
         sum_of_weights = sum(self.weights)
         self.weights = [w / sum_of_weights for w in self.weights]
 
-        sumsq_of_weights = sum([w**2 for w in self.weights])
+        sumsq_of_weights = sum([w ** 2 for w in self.weights])
         self.mueff = 1.0 / sumsq_of_weights
 
         if self.cs is None:
             self.cs = (self.mueff + 2.0) / (self.problem.nvars + self.mueff + 3.0)
 
         if self.damps is None:
-            self.damps = (1.0 + 2.0*max(0, math.sqrt((self.mueff - 1.0) / (self.problem.nvars + 1.0)) - 1.0)) + self.cs
+            self.damps = (1.0 + 2.0 * max(0,
+                                          math.sqrt((self.mueff - 1.0) / (self.problem.nvars + 1.0)) - 1.0)) + self.cs
 
         if self.cc is None:
             self.cc = 4.0 / (self.problem.nvars + 4.0)
 
         if self.ccov is None:
-            self.ccov = 2.0 / (self.problem.nvars + 1.41) / (self.problem.nvars + 1.41) / self.mueff + (1.0 - (1.0 / self.mueff)) * min(1.0, (2.0*self.mueff - 1.0) / (self.mueff + (self.problem.nvars + 2.0)**2))
+            self.ccov = 2.0 / (self.problem.nvars + 1.41) / (self.problem.nvars + 1.41) / self.mueff + (
+                        1.0 - (1.0 / self.mueff)) * min(1.0, (2.0 * self.mueff - 1.0) / (
+                        self.mueff + (self.problem.nvars + 2.0) ** 2))
 
         if self.ccovsep is None:
             self.ccovsep = min(1.0, self.ccov * (self.problem.nvars + 1.5) / 3.0)
@@ -1140,10 +1163,10 @@ class CMAES(Algorithm):
                 self.diag_D[i] = math.sqrt(self.C[i][i])
         else:
             for i in range(self.problem.nvars):
-                for j in range(i+1):
+                for j in range(i + 1):
                     self.B[i][j] = self.B[j][i] = self.C[i][j]
 
-            offdiag = [0.0]*self.problem.nvars
+            offdiag = [0.0] * self.problem.nvars
             tred2(self.problem.nvars, self.B, self.diag_D, offdiag)
             tql2(self.problem.nvars, self.diag_D, offdiag, self.B)
 
@@ -1160,9 +1183,10 @@ class CMAES(Algorithm):
     def test_and_correct_numerics(self):
         # flat fitness, test if function values are identical
         if len(self.population) > 0:
-            self.population = sorted(self.population, key=lambda x : x.objectives[0])
+            self.population = sorted(self.population, key=lambda x: x.objectives[0])
 
-            if self.population[0].objectives[0] == self.population[min(self.offspring_size-1, self.offspring_size/2 + 1) - 1].objectives[0]:
+            if self.population[0].objectives[0] == \
+                    self.population[min(self.offspring_size - 1, self.offspring_size / 2 + 1) - 1].objectives[0]:
                 print("flat fitness landscape, consider reformulation of fitness, step size increased", file=sys.stderr)
                 self.sigma *= math.exp(0.2 + self.cs / self.damps)
 
@@ -1181,8 +1205,8 @@ class CMAES(Algorithm):
                 self.pc[i] *= fac
                 self.diag_D[i] *= fac
 
-                for j in range(i+1):
-                    self.C[i][j] *= fac**2
+                for j in range(i + 1):
+                    self.C[i][j] *= fac ** 2
 
     def sample(self):
         if (self.iteration - self.last_eigenupdate) > 1.0 / self.ccov / self.problem.nvars / 5.0:
@@ -1212,7 +1236,7 @@ class CMAES(Algorithm):
                     if feasible:
                         break
             else:
-                artmp = [0.0]*self.problem.nvars
+                artmp = [0.0] * self.problem.nvars
 
                 while True:
                     feasible = True
@@ -1245,11 +1269,11 @@ class CMAES(Algorithm):
 
     def update_distribution(self):
         xold = self.xmean[:]
-        BDz = [0.0]*self.problem.nvars
-        artmp = [0.0]*self.problem.nvars
+        BDz = [0.0] * self.problem.nvars
+        artmp = [0.0] * self.problem.nvars
 
         if self.problem.nobjs == 1:
-            self.population = sorted(self.population, key=lambda x : x.objectives[0])
+            self.population = sorted(self.population, key=lambda x: x.objectives[0])
         else:
             if self.fitness_evaluator is None:
                 self.population = sorted(self.population, key=functools.cmp_to_key(nondominated_cmp))
@@ -1266,29 +1290,38 @@ class CMAES(Algorithm):
 
         if self.diagonal_iterations >= self.iteration:
             for i in range(self.problem.nvars):
-                self.ps[i] = (1.0 - self.cs) * self.ps[i] + math.sqrt(self.cs * (2.0 - self.cs)) * BDz[i] / self.diag_D[i]
+                self.ps[i] = (1.0 - self.cs) * self.ps[i] + math.sqrt(self.cs * (2.0 - self.cs)) * BDz[i] / self.diag_D[
+                    i]
         else:
             for i in range(self.problem.nvars):
-                artmp[i] = sum([self.B[j][i]*BDz[j] for j in range(self.problem.nvars)]) / self.diag_D[i]
+                artmp[i] = sum([self.B[j][i] * BDz[j] for j in range(self.problem.nvars)]) / self.diag_D[i]
 
             for i in range(self.problem.nvars):
-                self.ps[i] = (1.0 - self.cs) * self.ps[i] + math.sqrt(self.cs * (2.0 - self.cs)) * sum([self.B[i][j] * artmp[j] for j in range(self.problem.nvars)])
+                self.ps[i] = (1.0 - self.cs) * self.ps[i] + math.sqrt(self.cs * (2.0 - self.cs)) * sum(
+                    [self.B[i][j] * artmp[j] for j in range(self.problem.nvars)])
 
-        psxps = sum([self.ps[i]**2 for i in range(self.problem.nvars)])
+        psxps = sum([self.ps[i] ** 2 for i in range(self.problem.nvars)])
         hsig = 0.0
 
-        if math.sqrt(psxps) / math.sqrt(1.0 - math.pow(1.0 - self.cs, 2.0 * self.iteration)) / self.chi_N < 1.4 + 2.0 / (self.problem.nvars+1):
+        if math.sqrt(psxps) / math.sqrt(
+                1.0 - math.pow(1.0 - self.cs, 2.0 * self.iteration)) / self.chi_N < 1.4 + 2.0 / (
+                self.problem.nvars + 1):
             hsig = 1.0
 
         for i in range(self.problem.nvars):
             self.pc[i] = (1.0 - self.cc) * self.pc[i] + hsig * math.sqrt(self.cc * (2.0 - self.cc)) * BDz[i]
 
         for i in range(self.problem.nvars):
-            for j in range(i if self.diagonal_iterations >= self.iteration else 0, i+1):
-                self.C[i][j] = (1.0 - (self.ccovsep if self.diagonal_iterations >= self.iteration else self.ccov)) * self.C[i][j] + self.ccov * (1.0 / self.mueff) * (self.pc[i] * self.pc[j] + (1.0 - hsig) * self.cc * (2.0 - self.cc) * self.C[i][j])
+            for j in range(i if self.diagonal_iterations >= self.iteration else 0, i + 1):
+                self.C[i][j] = (1.0 - (self.ccovsep if self.diagonal_iterations >= self.iteration else self.ccov)) * \
+                               self.C[i][j] + self.ccov * (1.0 / self.mueff) * (
+                                           self.pc[i] * self.pc[j] + (1.0 - hsig) * self.cc * (2.0 - self.cc) *
+                                           self.C[i][j])
 
                 for k in range(self.mu):
-                    self.C[i][j] += self.ccov * (1.0 - 1.0 / self.mueff) * self.weights[k] * (self.population[k].variables[i] - xold[i]) * (self.population[k].variables[j] - xold[j]) / (self.sigma**2)
+                    self.C[i][j] += self.ccov * (1.0 - 1.0 / self.mueff) * self.weights[k] * (
+                                self.population[k].variables[i] - xold[i]) * (
+                                                self.population[k].variables[j] - xold[j]) / (self.sigma ** 2)
 
         self.sigma *= math.exp(((math.sqrt(psxps) / self.chi_N) - 1.0) * self.cs / self.damps)
 
@@ -1305,23 +1338,24 @@ class CMAES(Algorithm):
         self.archive += self.population
         self.update_distribution()
 
+
 class IBEA(AbstractGeneticAlgorithm):
 
     def __init__(self, problem,
-                 population_size = 100,
-                 generator = RandomGenerator(),
-                 fitness_evaluator = HypervolumeFitnessEvaluator(),
-                 fitness_comparator = AttributeDominance(fitness_key, False),
-                 variator = None,
+                 population_size=100,
+                 generator=RandomGenerator(),
+                 fitness_evaluator=HypervolumeFitnessEvaluator(),
+                 fitness_comparator=AttributeDominance(fitness_key, False),
+                 variator=None,
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(IBEA, self).__init__(problem, population_size, generator, **kwargs)
         self.fitness_evaluator = fitness_evaluator
         self.fitness_comparator = fitness_comparator
         self.selector = TournamentSelector(2, fitness_comparator)
         self.variator = variator
 
     def initialize(self):
-        super().initialize()
+        super(IBEA, self).initialize()
         self.fitness_evaluator.evaluate(self.population)
 
         if self.variator is None:
@@ -1351,16 +1385,17 @@ class IBEA(AbstractGeneticAlgorithm):
 
         return index
 
+
 class PAES(AbstractGeneticAlgorithm):
 
     def __init__(self,
                  problem,
-                 divisions = 8,
-                 capacity = 100,
-                 generator = RandomGenerator(),
-                 variator = None,
+                 divisions=8,
+                 capacity=100,
+                 generator=RandomGenerator(),
+                 variator=None,
                  **kwargs):
-        super().__init__(problem, 1, generator, **kwargs)
+        super(PAES, self).__init__(problem, 1, generator, **kwargs)
         self.variator = variator
         self.dominance = ParetoDominance()
         self.archive = AdaptiveGridArchive(capacity, problem.nobjs, divisions)
@@ -1374,7 +1409,7 @@ class PAES(AbstractGeneticAlgorithm):
             self.result = self.archive
 
     def initialize(self):
-        super().initialize()
+        super(PAES, self).initialize()
         self.archive += self.population
 
         if self.variator is None:
@@ -1408,10 +1443,11 @@ class PAES(AbstractGeneticAlgorithm):
         else:
             return parent
 
+
 class RegionBasedSelector(Selector):
 
     def __init__(self, archive, grid):
-        super().__init__()
+        super(RegionBasedSelector, self).__init__()
         self.archive = archive
         self.grid = grid
 
@@ -1427,22 +1463,23 @@ class RegionBasedSelector(Selector):
 
         if entry1[0] != entry2[0]:
             if (self.archive.density[entry2[0]] < self.archive.density[entry1[0]] or
-                (self.archive.density[entry2[0]] == self.archive.density[entry1[0]] and random.getrandbits(1))):
+                    (self.archive.density[entry2[0]] == self.archive.density[entry1[0]] and random.getrandbits(1))):
                 selection = entry2
 
         return selection[1][random.randrange(len(selection[1]))]
+
 
 class PESA2(AbstractGeneticAlgorithm):
 
     def __init__(self,
                  problem,
-                 population_size = 100,
-                 divisions = 8,
-                 capacity = 100,
-                 generator = RandomGenerator(),
-                 variator = None,
+                 population_size=100,
+                 divisions=8,
+                 capacity=100,
+                 generator=RandomGenerator(),
+                 variator=None,
                  **kwargs):
-        super().__init__(problem, population_size, generator, **kwargs)
+        super(PESA2, self).__init__(problem, population_size, generator, **kwargs)
         self.variator = variator
         self.dominance = ParetoDominance()
         self.archive = AdaptiveGridArchive(capacity, problem.nobjs, divisions)
@@ -1456,7 +1493,7 @@ class PESA2(AbstractGeneticAlgorithm):
             self.result = self.archive
 
     def initialize(self):
-        super().initialize()
+        super(PESA2, self).initialize()
         self.archive += self.population
 
         if self.variator is None:
@@ -1501,15 +1538,15 @@ class PESA2(AbstractGeneticAlgorithm):
         else:
             return parent
 
-class PeriodicAction(Algorithm):
 
+class PeriodicAction(Algorithm):
     __metaclass__ = ABCMeta
 
     def __init__(self,
                  algorithm,
-                 frequency = 10000,
-                 by_nfe = True):
-        super().__init__(algorithm.problem,
+                 frequency=10000,
+                 by_nfe=True):
+        super(PeriodicAction, self).__init__(algorithm.problem,
                                              algorithm.evaluator)
         self.algorithm = algorithm
         self.frequency = frequency
@@ -1544,19 +1581,20 @@ class PeriodicAction(Algorithm):
         else:
             raise AttributeError()
 
+
 class AdaptiveTimeContinuation(PeriodicAction):
 
     def __init__(self,
                  algorithm,
-                 window_size = 100,
-                 max_window_size = 1000,
-                 population_ratio = 4.0,
-                 min_population_size = 10,
-                 max_population_size = 10000,
-                 mutator = UM(1.0)):
-        super().__init__(algorithm,
-                                                       frequency = window_size,
-                                                       by_nfe = False)
+                 window_size=100,
+                 max_window_size=1000,
+                 population_ratio=4.0,
+                 min_population_size=10,
+                 max_population_size=10000,
+                 mutator=UM(1.0)):
+        super(AdaptiveTimeContinuation, self).__init__(algorithm,
+                                                       frequency=window_size,
+                                                       by_nfe=False)
         self.window_size = window_size
         self.max_window_size = max_window_size
         self.population_ratio = population_ratio
@@ -1609,17 +1647,18 @@ class AdaptiveTimeContinuation(PeriodicAction):
         if self.check():
             self.restart()
 
+
 class EpsilonProgressContinuation(AdaptiveTimeContinuation):
 
     def __init__(self,
                  algorithm,
-                 window_size = 100,
-                 max_window_size = 1000,
-                 population_ratio = 4.0,
-                 min_population_size = 10,
-                 max_population_size = 10000,
-                 mutator = UM(1.0)):
-        super().__init__(algorithm,
+                 window_size=100,
+                 max_window_size=1000,
+                 population_ratio=4.0,
+                 min_population_size=10,
+                 max_population_size=10000,
+                 mutator=UM(1.0)):
+        super(EpsilonProgressContinuation, self).__init__(algorithm,
                                                           window_size,
                                                           max_window_size,
                                                           population_ratio,
@@ -1629,7 +1668,7 @@ class EpsilonProgressContinuation(AdaptiveTimeContinuation):
         self.last_improvements = 0
 
     def check(self):
-        result = super().check()
+        result = super(EpsilonProgressContinuation, self).check()
 
         if not result:
             if self.archive.improvements <= self.last_improvements:
@@ -1639,25 +1678,142 @@ class EpsilonProgressContinuation(AdaptiveTimeContinuation):
         return result
 
     def restart(self):
-        super().restart()
+        super(EpsilonProgressContinuation, self).restart()
         self.last_improvements = self.archive.improvements
+
 
 class EpsNSGAII(AdaptiveTimeContinuation):
 
     def __init__(self,
                  problem,
                  epsilons,
-                 population_size = 100,
-                 generator = RandomGenerator(),
-                 selector = TournamentSelector(2),
-                 variator = None,
+                 population_size=100,
+                 generator=RandomGenerator(),
+                 selector=TournamentSelector(2),
+                 variator=None,
                  **kwargs):
-        super().__init__(
-                NSGAII(problem,
-                       population_size,
-                       generator,
-                       selector,
-                       variator,
-                       EpsilonBoxArchive(epsilons),
-                       **kwargs))
+        super(EpsNSGAII, self).__init__(
+            NSGAII(problem,
+                   population_size,
+                   generator,
+                   selector,
+                   variator,
+                   EpsilonBoxArchive(epsilons),
+                   **kwargs))
 
+
+class BORGDefaultDescriptor:
+    # this treats defaults as class level attributes!
+
+    def __init__(self, default_function):
+        self.default_function = default_function
+
+    def __get__(self, instance, owner):
+        return self.default_function(instance.problem.nvars)
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+
+class SingleObjectiveBorg(GeneticAlgorithm):  ### added 10/10/2022 IvD
+    """A generational implementation of the BORG Framework
+
+    This algorithm adopts Epsilon Progress Continuation, and Auto Adaptive
+    Operator Selection, but embeds them within the NSGAII generational
+    algorithm, rather than the steady state implementation used by the BORG
+    algorithm.
+
+    The parametrization of all operators is based on the default values as used
+    in Borg 1.9.
+
+    Note:: limited to RealParameters only.
+
+    """
+
+    pm_p = BORGDefaultDescriptor(lambda x: 1 / x)
+    pm_dist = 20
+
+    sbx_prop = 1
+    sbx_dist = 15
+
+    de_rate = 0.1
+    de_stepsize = 0.5
+
+    um_p = BORGDefaultDescriptor(lambda x: x + 1)
+
+    spx_nparents = 10
+    spx_noffspring = 2
+    spx_expansion = 0.3
+
+    pcx_nparents = 10
+    pcx_noffspring = 2
+    pcx_eta = 0.1
+    pcx_zeta = 0.1
+
+    undx_nparents = 10
+    undx_noffspring = 2
+    undx_zeta = 0.5
+    undx_eta = 0.35
+
+    def __init__(
+            self,
+            problem,
+            population_size=100,
+            generator=RandomGenerator(),
+            selector=TournamentSelector(2),
+            variator=None,
+            **kwargs,
+    ):
+        self.problem = problem
+
+        # Parameterization taken from
+        # Borg: An Auto-Adaptive MOEA Framework - Hadka, Reed
+        variators = [
+            GAOperator(
+                SBX(probability=self.sbx_prop, distribution_index=self.sbx_dist),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                PCX(
+                    nparents=self.pcx_nparents,
+                    noffspring=self.pcx_noffspring,
+                    eta=self.pcx_eta,
+                    zeta=self.pcx_zeta,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                DifferentialEvolution(crossover_rate=self.de_rate, step_size=self.de_stepsize),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                UNDX(
+                    nparents=self.undx_nparents,
+                    noffspring=self.undx_noffspring,
+                    zeta=self.undx_zeta,
+                    eta=self.undx_eta,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                SPX(
+                    nparents=self.spx_nparents,
+                    noffspring=self.spx_noffspring,
+                    expansion=self.spx_expansion,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            UM(probability=self.um_p),
+        ]
+
+        variator = Multimethod(self, variators)
+
+        super().__init__(
+            problem,
+            population_size,
+            100,
+            generator,
+            selector,
+            variator,
+            **kwargs,
+        )
