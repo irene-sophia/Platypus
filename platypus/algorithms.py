@@ -1817,3 +1817,9 @@ class SingleObjectiveBorg(GeneticAlgorithm):  ### added 10/10/2022 IvD
             variator,
             **kwargs,
         )
+
+    def step(self):
+        if self.nfe == 0:
+            self.initialize()
+        else:
+            self.iterate()

@@ -16,11 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Platypus.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import absolute_import, division, print_function
 
-import numpy as np
-import pandas as pd
-import six
 import time
 import datetime
 import functools
@@ -33,11 +29,10 @@ try:
 except NameError:
     from sets import Set as set
 
-
 class ExperimentJob(Job):
 
     def __init__(self, instance, nfe, callback, algorithm_name, problem_name, seed, display_stats):
-        super(ExperimentJob, self).__init__()
+        super().__init__()
         self.instance = instance
         self.nfe = nfe
         self.callback = callback
@@ -50,21 +45,20 @@ class ExperimentJob(Job):
         if self.display_stats:
             start_time = time.time()
             print("Running seed", self.seed, "of", self.algorithm_name, "on",
-                  self.problem_name)
+                    self.problem_name)
 
         self.instance.run(self.nfe, self.callback)
 
         if self.display_stats:
             end_time = time.time()
             print("Finished seed", self.seed, "of", self.algorithm_name, "on",
-                  self.problem_name, ":",
-                  datetime.timedelta(seconds=round(end_time - start_time)))
-
+                    self.problem_name, ":",
+                    datetime.timedelta(seconds=round(end_time-start_time)))
 
 class IndicatorJob(Job):
 
     def __init__(self, algorithm_name, problem_name, result_set, indicators):
-        super(IndicatorJob, self).__init__()
+        super().__init__()
         self.algorithm_name = algorithm_name
         self.problem_name = problem_name
         self.result_set = result_set
@@ -72,7 +66,6 @@ class IndicatorJob(Job):
 
     def run(self):
         self.results = [indicator(self.result_set) for indicator in self.indicators]
-
 
 def evaluate_job_generator(algorithms, problems, seeds, nfe, callback, display_stats):
     existing_algorithms = set()
@@ -112,6 +105,7 @@ def evaluate_job_generator(algorithms, problems, seeds, nfe, callback, display_s
                 if len(problems[j]) >= 2:
                     problem_name = problems[j][1]
                 else:
+                    # problem_name = problem.__class__.__name__
                     problem_name = problem.problem_name
             else:
                 problem = problems[j]
@@ -119,6 +113,7 @@ def evaluate_job_generator(algorithms, problems, seeds, nfe, callback, display_s
                 if isinstance(problem, type):
                     problem = problem()
 
+                # problem_name = problem.__class__.__name__
                 problem_name = problem.problem_name
 
             if i == 0:
@@ -129,21 +124,20 @@ def evaluate_job_generator(algorithms, problems, seeds, nfe, callback, display_s
 
             for k in range(seeds):
                 yield ExperimentJob(algorithm(problem, **kwargs),
-                                    nfe,
-                                    callback,
-                                    algorithm_name,
-                                    problem_name,
-                                    k,
-                                    display_stats)
+                                  nfe,
+                                  callback,
+                                  algorithm_name,
+                                  problem_name,
+                                  k,
+                                  display_stats)
 
-
-def experiment(algorithms=[],
-               problems=[],
-               seeds=10,
+def experiment(algorithms = [],
+               problems = [],
+               seeds = 10,
                nfe=10000,
                callback=None,
-               evaluator=None,
-               display_stats=False):
+               evaluator = None,
+               display_stats = False):
     """Run experiments.
 
     Used to run experiments where one or more algorithms are tested on one or
@@ -165,7 +159,7 @@ def experiment(algorithms=[],
         of a Problem, or a tuple defining ``(type, name)``, where type is the
         Problem's type and name is a human-readable name for the problem.  All
         problems must have unique names.  If a name is not provided, the type
-        name is used. 
+        name is used.
     seeds : int
         The number of replicates of each experiment to run
     nfe : int
@@ -200,22 +194,21 @@ def experiment(algorithms=[],
         if not job.problem_name in results[job.algorithm_name]:
             results[job.algorithm_name][job.problem_name] = []
 
-        results[job.algorithm_name][job.problem_name].append(job.instance.result)
+        # results[job.algorithm_name][job.problem_name].append(job.instance.result)
+        results[job.algorithm_name][job.problem_name].append(job.instance)
         count += 1
 
     return results
 
-
 def calculate_job_generator(results, indicators):
-    for algorithm in six.iterkeys(results):
-        for problem in six.iterkeys(results[algorithm]):
+    for algorithm in results.keys():
+        for problem in results[algorithm].keys():
             for result_set in results[algorithm][problem]:
                 yield IndicatorJob(algorithm, problem, result_set, indicators)
 
-
 def calculate(results,
-              indicators=[],
-              evaluator=None):
+              indicators = [],
+              evaluator = None):
     if not isinstance(indicators, list):
         indicators = [indicators]
 
@@ -245,17 +238,15 @@ def calculate(results,
 
     return results
 
-
 def display(results, ndigits=None):
-    for algorithm in six.iterkeys(results):
+    for algorithm in results.keys():
         print(algorithm)
-        for problem in six.iterkeys(results[algorithm]):
+        for problem in results[algorithm].keys():
             if isinstance(results[algorithm][problem], dict):
                 print("   ", problem)
-                for indicator in six.iterkeys(results[algorithm][problem]):
+                for indicator in results[algorithm][problem].keys():
                     if ndigits:
-                        print("       ", indicator, ":", list(
-                            map(functools.partial(round, ndigits=ndigits), results[algorithm][problem][indicator])))
+                        print("       ", indicator, ":", list(map(functools.partial(round, ndigits=ndigits), results[algorithm][problem][indicator])))
                     else:
                         print("       ", indicator, ":", results[algorithm][problem][indicator])
             else:
