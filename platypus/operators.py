@@ -795,7 +795,7 @@ class Multimethod(Variator):
                     if hasattr(solution, "operator"):
                         counts[solution.operator] += 1
 
-            # added IvD for singleobjectiveborg
+            # added IvD 20/03/2023 for singleobjectiveborg
             else:
                 for solution in self.algorithm.result:
                     if hasattr(solution, "operator"):

@@ -130,6 +130,14 @@ class GeneticAlgorithm(SingleObjectiveAlgorithm):
         self.population = offspring[:self.population_size]
         self.fittest = self.population[0]
 
+        #IvD
+        if self.archive is not None:
+            self.archive.extend(self.population)
+            self.fittest = self.archive[0]
+
+            if self.population[0].objectives[0] != self.archive[0].objectives[0]:
+                print('diff')
+
 
 class EvolutionaryStrategy(SingleObjectiveAlgorithm):
 
@@ -208,9 +216,9 @@ class NSGAII(AbstractGeneticAlgorithm):
 
         self.evaluate_all(offspring)
 
-        offspring.extend(self.population)
-        nondominated_sort(offspring)
-        self.population = nondominated_truncate(offspring, self.population_size)
+        offspring.extend(self.population)  # offspring = offspring + population (parents)
+        nondominated_sort(offspring)  # sort
+        self.population = nondominated_truncate(offspring, self.population_size)  # take top x
 
         if self.archive is not None:
             self.archive.extend(self.population)
@@ -1739,7 +1747,7 @@ class SingleObjectiveBorg(GeneticAlgorithm):  ### added 10/10/2022 IvD
     de_rate = 0.1
     de_stepsize = 0.5
 
-    um_p = BORGDefaultDescriptor(lambda x: x + 1)
+    um_p = BORGDefaultDescriptor(lambda x: 1 / x)
 
     spx_nparents = 10
     spx_noffspring = 2
@@ -1811,7 +1819,236 @@ class SingleObjectiveBorg(GeneticAlgorithm):  ### added 10/10/2022 IvD
         super().__init__(
             problem,
             population_size,
-            150,  # IvD 100
+            200,  # IvD 100
+            generator,
+            selector,
+            variator,
+            **kwargs,
+        )
+
+
+class IreneArchive(Archive):
+
+    def __init__(self, archive_size):
+        super(IreneArchive, self).__init__()
+        # self.improvements = 0
+        self.archive_size = archive_size
+
+    def extend(self, solutions):
+        # add all solutions to archive
+        contents = self._contents + solutions
+        # sort on score
+        contents_sorted = sorted(contents, key=lambda x: x.objectives[0], reverse=True)
+        # top 100
+        self._contents = contents_sorted[:self.archive_size]
+
+# GenerationalBorg from ema_workbench
+class GenerationalBorg(EpsilonProgressContinuation):
+    """A generational implementation of the BORG Framework
+
+    This algorithm adopts Epsilon Progress Continuation, and Auto Adaptive
+    Operator Selection, but embeds them within the NSGAII generational
+    algorithm, rather than the steady state implementation used by the BORG
+    algorithm.
+
+    The parametrization of all operators is based on the default values as used
+    in Borg 1.9.
+
+    Note:: limited to RealParameters only.
+
+    """
+
+    pm_p = BORGDefaultDescriptor(lambda x: 1 / x)
+    pm_dist = 20
+
+    sbx_prop = 1
+    sbx_dist = 15
+
+    de_rate = 0.1
+    de_stepsize = 0.5
+
+    um_p = BORGDefaultDescriptor(lambda x: x + 1)
+
+    spx_nparents = 10
+    spx_noffspring = 2
+    spx_expansion = 0.3
+
+    pcx_nparents = 10
+    pcx_noffspring = 2
+    pcx_eta = 0.1
+    pcx_zeta = 0.1
+
+    undx_nparents = 10
+    undx_noffspring = 2
+    undx_zeta = 0.5
+    undx_eta = 0.35
+
+    def __init__(
+        self,
+        problem,
+        # epsilons,
+        population_size=100,
+        generator=RandomGenerator(),
+        selector=TournamentSelector(2),
+        variator=None,
+        **kwargs,
+    ):
+        self.problem = problem
+
+        # Parameterization taken from
+        # Borg: An Auto-Adaptive MOEA Framework - Hadka, Reed
+        variators = [
+            GAOperator(
+                SBX(probability=self.sbx_prop, distribution_index=self.sbx_dist),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                PCX(
+                    nparents=self.pcx_nparents,
+                    noffspring=self.pcx_noffspring,
+                    eta=self.pcx_eta,
+                    zeta=self.pcx_zeta,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                DifferentialEvolution(
+                    crossover_rate=self.de_rate, step_size=self.de_stepsize
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                UNDX(
+                    nparents=self.undx_nparents,
+                    noffspring=self.undx_noffspring,
+                    zeta=self.undx_zeta,
+                    eta=self.undx_eta,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                SPX(
+                    nparents=self.spx_nparents,
+                    noffspring=self.spx_noffspring,
+                    expansion=self.spx_expansion,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            UM(probability=self.um_p),
+        ]
+
+        variator = Multimethod(self, variators)
+
+        super().__init__(
+            NSGAII(
+                problem,
+                population_size,
+                generator,
+                selector,
+                variator,
+                IreneArchive,
+                **kwargs,
+            )
+        )
+
+class SingleObjectiveBorgWithArchive(GeneticAlgorithm):  ### added 10/10/2022 IvD
+    """A generational implementation of the BORG Framework
+
+    This algorithm adopts Epsilon Progress Continuation, and Auto Adaptive
+    Operator Selection, but embeds them within the NSGAII generational
+    algorithm, rather than the steady state implementation used by the BORG
+    algorithm.
+
+    The parametrization of all operators is based on the default values as used
+    in Borg 1.9.
+
+    Note:: limited to RealParameters only.
+
+    """
+
+    pm_p = BORGDefaultDescriptor(lambda x: 1 / x)
+    pm_dist = 20
+
+    sbx_prop = 1
+    sbx_dist = 15
+
+    de_rate = 0.1
+    de_stepsize = 0.5
+
+    um_p = BORGDefaultDescriptor(lambda x: 1 / x)
+
+    spx_nparents = 10
+    spx_noffspring = 2
+    spx_expansion = 0.3
+
+    pcx_nparents = 10
+    pcx_noffspring = 2
+    pcx_eta = 0.1
+    pcx_zeta = 0.1
+
+    undx_nparents = 10
+    undx_noffspring = 2
+    undx_zeta = 0.5
+    undx_eta = 0.35
+
+    def __init__(
+            self,
+            problem,
+            population_size=100,
+            generator=RandomGenerator(),
+            selector=TournamentSelector(2),
+            variator=None,
+            **kwargs,
+    ):
+        self.problem = problem
+        self.archive = IreneArchive(archive_size=100)
+
+        # Parameterization taken from
+        # Borg: An Auto-Adaptive MOEA Framework - Hadka, Reed
+        variators = [
+            GAOperator(
+                SBX(probability=self.sbx_prop, distribution_index=self.sbx_dist),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                PCX(
+                    nparents=self.pcx_nparents,
+                    noffspring=self.pcx_noffspring,
+                    eta=self.pcx_eta,
+                    zeta=self.pcx_zeta,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                DifferentialEvolution(crossover_rate=self.de_rate, step_size=self.de_stepsize),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                UNDX(
+                    nparents=self.undx_nparents,
+                    noffspring=self.undx_noffspring,
+                    zeta=self.undx_zeta,
+                    eta=self.undx_eta,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            GAOperator(
+                SPX(
+                    nparents=self.spx_nparents,
+                    noffspring=self.spx_noffspring,
+                    expansion=self.spx_expansion,
+                ),
+                PM(probability=self.pm_p, distribution_index=self.pm_dist),
+            ),
+            UM(probability=self.um_p),
+        ]
+
+        variator = Multimethod(self, variators)
+
+        super().__init__(
+            problem,
+            population_size,
+            200,  # IvD 100
             generator,
             selector,
             variator,

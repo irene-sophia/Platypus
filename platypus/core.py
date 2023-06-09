@@ -429,6 +429,8 @@ class Algorithm(object):
         self.result['probability_UNDX'] = callback.probability_UNDX
         self.result['probability_SPX'] = callback.probability_SPX
         self.result['probability_UM'] = callback.probability_UM
+        self.result['avg_pop_score'] = callback.avg_pop_score
+        self.result['avg_pop_dv_variance'] = callback.avg_pop_dv_variance
 
         for u in range(self.problem.U):
             col_name = 'pi_' + str(u)

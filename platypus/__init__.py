@@ -16,6 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Platypus.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import absolute_import, division, print_function
 
 from .core import *
 from .algorithms import *
@@ -28,4 +29,4 @@ from .tools import *
 from .types import *
 from .weights import *
 
-__version__ = "1.1.0" # Update setup.py if the version changes!
+__version__ = "1.0.4" # Update setup.py if the version changes!
