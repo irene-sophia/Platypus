@@ -1819,7 +1819,7 @@ class SingleObjectiveBorg(GeneticAlgorithm):  ### added 10/10/2022 IvD
         super().__init__(
             problem,
             population_size,
-            200,  # IvD 100
+            150,  # IvD 100
             generator,
             selector,
             variator,
